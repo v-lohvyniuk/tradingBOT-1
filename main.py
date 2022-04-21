@@ -1,10 +1,13 @@
 import time
 import os
 import pandas as pd
+import threading
 from flask import Flask, render_template
 
 __name__ = "__main__"
 app = Flask(__name__)
+
+is_thread_started = False
 
 
 import binance_simulator
@@ -136,32 +139,49 @@ def emulate_sell_everything():
     return emulated_usdt_balance
 
 
-trading_counter = 0
+def do_trade():
+    trading_counter = 0
+
+    while True:
+        print(f"Trading round: [{trading_counter}]")
+        trader(100)
+        print("Waiting for new trading round. Press key to finish")
+        calculated_current_usdt_balance = emulate_sell_everything()
+        print(f"Meanwhile your emulated USDT balance is [{calculated_current_usdt_balance}]")
+        try:
+            time.sleep(60)
+        except KeyboardInterrupt:
+            print("Loop interrupred, selling everything")
+            final_balance = sell_everything()
+            print("-----------------SOLD EVERYTHING----------------")
+            print("----------------SEE FINAL BAlANCE----------------")
+            print(final_balance)
+            exit(0)
+
+        trading_counter += 1
+
+
+def is_started_trading():
+    return is_thread_started
+
+
+def start_trading():
+    global is_thread_started
+    is_thread_started = True
+    thread = threading.Thread(target=do_trade)
+    thread.daemon = True
+    thread.start()
 
 
 @app.route("/")
 def hello():
+    if not is_started_trading():
+        start_trading()
     return "<h1> Application is UP, all services are running </h1>"
+
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5201))
     app.run(host='0.0.0.0', port=port)
 
-while True:
-    print(f"Trading round: [{trading_counter}]")
-    trader(100)
-    print("Waiting for new trading round. Press key to finish")
-    calculated_current_usdt_balance = emulate_sell_everything()
-    print(f"Meanwhile your emulated USDT balance is [{calculated_current_usdt_balance}]")
-    try:
-        time.sleep(60)
-    except KeyboardInterrupt:
-        print("Loop interrupred, selling everything")
-        final_balance = sell_everything()
-        print("-----------------SOLD EVERYTHING----------------")
-        print("----------------SEE FINAL BAlANCE----------------")
-        print(final_balance)
-        exit(0)
-
-    trading_counter += 1
