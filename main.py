@@ -1,5 +1,5 @@
 import time
-
+import os
 import pandas as pd
 from flask import Flask, render_template
 
@@ -143,6 +143,10 @@ trading_counter = 0
 def hello():
     return "<h1> Application is UP, all services are running </h1>"
 
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5201))
+    app.run(host='0.0.0.0', port=port)
 
 while True:
     print(f"Trading round: [{trading_counter}]")
