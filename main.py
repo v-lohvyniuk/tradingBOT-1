@@ -179,9 +179,12 @@ def hello():
         start_trading()
 
     balances = client.get_balances_simulated()
+    calculated_current_usdt_balance = emulate_sell_everything()
+    print(f"Meanwhile your emulated USDT balance is [{calculated_current_usdt_balance}]")
 
-    return f"<h1> Application is UP, all services are running </h1> <h2>{balances}</h2>"
-
+    return f"<h1> Application is UP, all services are running </h1>" \
+           f"<h4>{balances}</h4> " \
+           f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>"
 
 
 if __name__ == "__main__":
