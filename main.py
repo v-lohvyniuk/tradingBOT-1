@@ -1,6 +1,11 @@
 import time
 
 import pandas as pd
+from flask import Flask, render_template
+
+__name__ = "__main__"
+app = Flask(__name__)
+
 
 import binance_simulator
 
@@ -130,11 +135,14 @@ def emulate_sell_everything():
 
     return emulated_usdt_balance
 
-    return client.get_balances_simulated()
-
-
 
 trading_counter = 0
+
+
+@app.route("/")
+def hello():
+    return "<h1> Application is UP, all services are running </h1>"
+
 
 while True:
     print(f"Trading round: [{trading_counter}]")

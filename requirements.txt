@@ -1,3 +1,4 @@
 requests
 binance
 pandas
+flask
