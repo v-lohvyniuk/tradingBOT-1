@@ -177,7 +177,10 @@ def start_trading():
 def hello():
     if not is_started_trading():
         start_trading()
-    return "<h1> Application is UP, all services are running </h1>"
+
+    balances = client.get_balances_simulated()
+
+    return f"<h1> Application is UP, all services are running </h1> <h2>{balances}</h2>"
 
 
 
