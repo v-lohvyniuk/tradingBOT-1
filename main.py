@@ -1,0 +1,155 @@
+import time
+
+import pandas as pd
+
+import binance_simulator
+
+# client = binance_wrapper.Client()
+client = binance_simulator.ClientMock()
+
+symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "AVAXUSDT", "LUNAUSDT", "DOTUSDT",
+           "DOGEUSDT", "SHIBUSDT", "MATICUSDT", "LTCUSDT", "ATOMUSDT", "LINKUSDT", "TRXUSDT", "NEARUSDT", "BCHUSDT",
+           "ALGOUSDT", "FTTUSDT", "XLMUSDT", "FTMUSDT", "UNIUSDT", "HBARUSDT", "MANAUSDT", "ICPUSDT", "ETCUSDT",
+           "AXSUSDT", "SANDUSDT", "EGLDUSDT", "KLAYUSDT", "VETUSDT", "FILUSDT", "THETAUSDT", "XTZUSDT", "XMRUSDT",
+           "GRTUSDT", "HNTUSDT", "EOSUSDT", "CAKEUSDT", "GALAUSDT", "FLOWUSDT", "TFUELUSDT", "AAVEUSDT", "ONEUSDT",
+           "NEOUSDT", "MKRUSDT", "QNTUSDT", "ENJUSDT", "XECUSDT"]
+
+posframe = pd.DataFrame(symbols)
+posframe.columns = ["Currency"]
+posframe["position"] = 0
+posframe["quantity"] = 0
+
+posframe.to_csv("positioncheck", index=False)
+
+pd.read_csv("positioncheck")
+
+
+print(client.get_balances())
+
+
+def gethourlydata(symbol):
+    frame = pd.DataFrame(client.klines(symbol, "1h", limit=75))
+
+    frame = frame[["openTime", "close"]]
+    frame.columns = ['Time', 'Close']
+    frame.Close = frame.Close.astype(float)
+    frame.Time = pd.to_datetime(frame.Time, unit='ms')
+
+    return frame
+
+
+temp = gethourlydata("BTCUSDT")
+
+
+def applytechnicals(df):
+    df["FastSMA"] = df.Close.rolling(5).mean()
+    df["SlowSMA"] = df.Close.rolling(75).mean()
+
+
+applytechnicals(temp)
+
+
+def changepos(curr, order, buy=True):
+    if buy:
+        posframe.loc[posframe.Currency == curr, 'position'] = 1
+        posframe.loc[posframe.Currency == curr, 'quantity'] = float(order['executedQty'])
+
+    else:
+        posframe.loc[posframe.Currency == curr, 'position'] = 0
+        posframe.loc[posframe.Currency == curr, 'quantity'] = 0
+
+
+def trader(investment=100):
+    print("SIMULATED BALANCES: " + str(client.get_balances_simulated()))
+
+    for coin in posframe[posframe.position == 1].Currency:
+        print(f"Check availability {coin} for SELL trade")
+        df = gethourlydata(coin)
+        applytechnicals(df)
+        lastrow = df.iloc[-1]
+        if lastrow.SlowSMA > lastrow.FastSMA:
+            # how to get the order price ???? probably this way
+            closing_price = lastrow.Close
+            selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
+
+            order = client.place_sell_order(symbol=coin,
+                                            qty=selling_qty,
+                                            price=closing_price)
+            changepos(coin, order, buy=False)
+            print(f"SOLD {order['executedQty']} of coin [{coin}]")
+
+    for coin in posframe[posframe.position == 0].Currency:
+        df = gethourlydata(coin)
+        applytechnicals(df)
+        lastrow = df.iloc[-1]
+        if lastrow.FastSMA > lastrow.SlowSMA:
+            closing_price = lastrow.Close
+
+            order = client.place_buy_order(symbol=coin,
+                                           qty=investment,
+                                           price=closing_price)
+
+            changepos(coin, order, buy=True)
+            if order['executedQty'] != 0:
+                print(f"BOUGHT {order['executedQty']} of coin [{coin}]")
+
+        else:
+            print(f"Buying condition is not fulfilled for coin: {coin}")
+
+
+def sell_everything():
+    for coin in posframe[posframe.position == 1].Currency:
+        df = gethourlydata(coin)
+        applytechnicals(df)
+        lastrow = df.iloc[-1]
+        closing_price = lastrow.Close
+        selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
+
+        order = client.place_sell_order(symbol=coin,
+                                        qty=selling_qty,
+                                        price=closing_price)
+
+    return client.get_balances_simulated()
+
+
+def emulate_sell_everything():
+    emulated_usdt_balance = 0
+    for coin in posframe[posframe.position == 1].Currency:
+        df = gethourlydata(coin)
+        applytechnicals(df)
+        lastrow = df.iloc[-1]
+        closing_price = lastrow.Close
+        selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
+
+        order = client.emulate_place_sell_order(symbol=coin,
+                                        qty=selling_qty,
+                                        price=closing_price)
+
+        order_price_in_usdt = order['executedQty']
+        emulated_usdt_balance += order_price_in_usdt
+
+    return emulated_usdt_balance
+
+    return client.get_balances_simulated()
+
+
+
+trading_counter = 0
+
+while True:
+    print(f"Trading round: [{trading_counter}]")
+    trader(100)
+    print("Waiting for new trading round. Press key to finish")
+    calculated_current_usdt_balance = emulate_sell_everything()
+    print(f"Meanwhile your emulated USDT balance is [{calculated_current_usdt_balance}]")
+    try:
+        time.sleep(60)
+    except KeyboardInterrupt:
+        print("Loop interrupred, selling everything")
+        final_balance = sell_everything()
+        print("-----------------SOLD EVERYTHING----------------")
+        print("----------------SEE FINAL BAlANCE----------------")
+        print(final_balance)
+        exit(0)
+
+    trading_counter += 1
