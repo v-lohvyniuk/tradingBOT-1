@@ -146,8 +146,6 @@ def do_trade():
         print(f"Trading round: [{trading_counter}]")
         trader(100)
         print("Waiting for new trading round. Press key to finish")
-        calculated_current_usdt_balance = emulate_sell_everything()
-        print(f"Meanwhile your emulated USDT balance is [{calculated_current_usdt_balance}]")
         try:
             time.sleep(60)
         except KeyboardInterrupt:
@@ -180,11 +178,15 @@ def hello():
 
     balances = client.get_balances_simulated()
     calculated_current_usdt_balance = emulate_sell_everything()
-    print(f"Meanwhile your emulated USDT balance is [{calculated_current_usdt_balance}]")
+
+    order_history_str = ""
+    for order in client.order_history:
+        order_history_str += order + "\n"
 
     return f"<h1> Application is UP, all services are running </h1>" \
            f"<h4>{balances}</h4> " \
-           f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>"
+           f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>" \
+           f"<h5>{order_history_str}<h5>"
 
 
 if __name__ == "__main__":

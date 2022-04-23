@@ -10,6 +10,7 @@ class ClientMock:
         self.secret_key = config.secret_key
 
         self.balances = {"USDT": 500}
+        self.order_history = []
         binance.set(self.api_key, self.secret_key)
 
     def get_balances_simulated(self):
@@ -35,6 +36,7 @@ class ClientMock:
 
             executedQty = qty / price
             self.balances[actual_coin] += executedQty
+            self.order_history.append(["BUY", symbol, price, qty])
             order = {"executedQty": executedQty}
         else:
             order = {"executedQty": 0}
@@ -47,6 +49,8 @@ class ClientMock:
 
         self.balances["USDT"] += price_in_usdt
         self.balances[actual_coin] = 0
+
+        self.order_history.append(["SELL", symbol, price, qty])
 
         order = {"executedQty": price_in_usdt}
         return order
