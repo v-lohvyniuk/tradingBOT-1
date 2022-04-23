@@ -90,12 +90,14 @@ def trader(investment=100):
         df = gethourlydata(coin)
         applytechnicals(df)
         lastrow = df.iloc[-1]
-        if lastrow.FastSMA > lastrow.SlowSMA:
-            closing_price = lastrow.Close
+        is_higher = lastrow.FastSMA >= lastrow.SlowSMA
+        is_just_became_higher = 1 - (lastrow.SlowSMA / lastrow.FastSMA) <=0.01
+        if is_higher and is_just_became_higher:
+            buy_price = lastrow.Close
 
             order = client.place_buy_order(symbol=coin,
                                            qty=investment,
-                                           price=closing_price)
+                                           price=buy_price)
 
             if order['executedQty'] != 0:
                 changepos(coin, order, buy=True)
