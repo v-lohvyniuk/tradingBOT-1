@@ -50,8 +50,8 @@ temp = gethourlydata("BTCUSDT")
 
 
 def applytechnicals(df):
-    df["FastSMA"] = df.Close.rolling(7).mean()
-    df["SlowSMA"] = df.Close.rolling(30).mean()
+    df["FastSMA"] = df.Close.rolling(3).mean()
+    df["SlowSMA"] = df.Close.rolling(20).mean()
 
 
 applytechnicals(temp)
@@ -90,9 +90,13 @@ def trader(investment=100):
         df = gethourlydata(coin)
         applytechnicals(df)
         lastrow = df.iloc[-1]
-        is_higher = lastrow.FastSMA >= lastrow.SlowSMA
-        is_just_became_higher = 1 - (lastrow.SlowSMA / lastrow.FastSMA) <=0.001 # start of the trace
-        if is_higher and is_just_became_higher:
+        prev_row = df.iloc[-2]
+
+        is_start_of_the_period = 1 - (lastrow.SlowSMA / lastrow.FastSMA) <= 0.001
+        is_fast_SMA_growing = lastrow.FastSMA >= lastrow.SlowSMA
+        was_fast_SMA_falling_1h_ago = prev_row.SlowSMA > prev_row.FastSMA
+
+        if is_start_of_the_period and was_fast_SMA_falling_1h_ago and is_fast_SMA_growing:
             buy_price = lastrow.Close
 
             order = client.place_buy_order(symbol=coin,
