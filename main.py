@@ -185,7 +185,7 @@ def hello():
     for order in client.order_history:
         order_copy = order.copy()
 
-        order_copy[2] = f'<a href="https://www.binance.com/ru/trade/{order[2]}_USDT" >' + order[2] + '</a>'
+        order_copy[2] = f'<a target="blank" href="https://www.binance.com/ru/trade/{order[2]}_USDT" >' + order[2] + '</a>'
         order_history_str += "<p>" + str(order_copy) + "" + "<p/>\n"
 
     return f"<h1> Application is UP, all services are running </h1>" \
