@@ -2,6 +2,10 @@ import binance
 
 import config
 import time
+import os
+
+os.environ['TZ'] = 'Europe/Kiev'
+time.tzset()
 
 
 class ClientMock:
@@ -51,7 +55,7 @@ class ClientMock:
         self.balances["USDT"] += price_in_usdt
         self.balances[actual_coin] = 0
 
-        self.order_history.append([time.ctime(), "SELL", symbol, price, qty])
+        self.order_history.append([time.timezone = ctime(), "SELL", symbol, price, qty])
 
         order = {"executedQty": price_in_usdt}
         return order
