@@ -91,7 +91,7 @@ def trader(investment=100):
         applytechnicals(df)
         lastrow = df.iloc[-1]
         is_higher = lastrow.FastSMA >= lastrow.SlowSMA
-        is_just_became_higher = 1 - (lastrow.SlowSMA / lastrow.FastSMA) <=0.01
+        is_just_became_higher = 1 - (lastrow.SlowSMA / lastrow.FastSMA) <=0.001 # start of the trace
         if is_higher and is_just_became_higher:
             buy_price = lastrow.Close
 
