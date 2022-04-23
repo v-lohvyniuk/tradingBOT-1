@@ -50,8 +50,8 @@ temp = gethourlydata("BTCUSDT")
 
 
 def applytechnicals(df):
-    df["FastSMA"] = df.Close.rolling(5).mean()
-    df["SlowSMA"] = df.Close.rolling(75).mean()
+    df["FastSMA"] = df.Close.rolling(7).mean()
+    df["SlowSMA"] = df.Close.rolling(25).mean()
 
 
 applytechnicals(temp)
