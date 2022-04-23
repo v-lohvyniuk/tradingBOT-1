@@ -1,6 +1,7 @@
 import binance
 
 import config
+import time
 
 
 class ClientMock:
@@ -36,7 +37,7 @@ class ClientMock:
 
             executedQty = qty / price
             self.balances[actual_coin] += executedQty
-            self.order_history.append(["BUY", symbol, price, qty])
+            self.order_history.append([time.ctime(), "BUY", symbol, price, qty])
             order = {"executedQty": executedQty}
         else:
             order = {"executedQty": 0}
@@ -50,7 +51,7 @@ class ClientMock:
         self.balances["USDT"] += price_in_usdt
         self.balances[actual_coin] = 0
 
-        self.order_history.append(["SELL", symbol, price, qty])
+        self.order_history.append([time.ctime(), "SELL", symbol, price, qty])
 
         order = {"executedQty": price_in_usdt}
         return order
