@@ -181,7 +181,7 @@ def hello():
 
     order_history_str = ""
     for order in client.order_history:
-        order_history_str += order + "\n"
+        order_history_str += str(order) + "\n"
 
     return f"<h1> Application is UP, all services are running </h1>" \
            f"<h4>{balances}</h4> " \
