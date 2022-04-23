@@ -51,7 +51,7 @@ temp = gethourlydata("BTCUSDT")
 
 def applytechnicals(df):
     df["FastSMA"] = df.Close.rolling(7).mean()
-    df["SlowSMA"] = df.Close.rolling(25).mean()
+    df["SlowSMA"] = df.Close.rolling(30).mean()
 
 
 applytechnicals(temp)
@@ -181,7 +181,8 @@ def hello():
 
     order_history_str = ""
     for order in client.order_history:
-        order_history_str += "<p>" + str(order) + "<p/>\n"
+        order[2] = f'<a href="https://www.binance.com/ru/trade/{order[2]}_USDT" >' + order[2] + '</p>'
+        order_history_str += "<p>" + str(order) + "" + "<p/>\n"
 
     return f"<h1> Application is UP, all services are running </h1>" \
            f"<h4>{balances}</h4> " \
