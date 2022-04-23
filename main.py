@@ -97,8 +97,8 @@ def trader(investment=100):
                                            qty=investment,
                                            price=closing_price)
 
-            changepos(coin, order, buy=True)
             if order['executedQty'] != 0:
+                changepos(coin, order, buy=True)
                 print(f"BOUGHT {order['executedQty']} of coin [{coin}]")
 
         else:
