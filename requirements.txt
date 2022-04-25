@@ -3,3 +3,4 @@ binance
 pandas
 flask
 pytalib
+aiohttp
