@@ -5,3 +5,4 @@ flask
 pytalib
 aiohttp
 dateparser
+websockets
