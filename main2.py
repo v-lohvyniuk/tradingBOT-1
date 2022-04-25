@@ -74,6 +74,7 @@ def get_hourly_data(symbol):
 
     result["prices"] = prices
     result["dates"] = dates
+    result["RSI"] = rsi_calculator.calculate_rsi(result["prices"])
 
     return result
 
@@ -82,7 +83,6 @@ result = get_hourly_data("BTCUSDT")
 
 # rsa = RelativeStrengthIndex(result["prices"])
 # rsa.calculate()
-result["RSI"] = rsi_calculator.calculate_rsi(result["prices"])
 
 
 for i in range(0, LIMIT):
