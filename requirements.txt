@@ -2,3 +2,4 @@ requests
 binance
 pandas
 flask
+pytalib

@@ -1,11 +1,13 @@
-import binance
+from binance import client
 
 import config
 import time
 import os
+import sys
 
 os.environ['TZ'] = 'Europe/Kiev'
-# time.tzset()
+if sys.platform != "win32":
+    time.tzset()
 
 
 class ClientMock:
@@ -16,20 +18,20 @@ class ClientMock:
 
         self.balances = {"USDT": 500}
         self.order_history = []
-        binance.set(self.api_key, self.secret_key)
+        self.client = client.Client(self.api_key, self.secret_key)
 
     def get_balances_simulated(self):
         return self.balances
 
     def get_balances(self):
-        return binance.balances()
+        pass
+        # return self.client.balances()
 
     def klines(self, pair, time_step, limit):
-        return binance.klines(pair, time_step, limit=limit)
+        return self.client.get_klines(symbol=pair, interval=time_step, limit=limit)
 
     def place_buy_order(self, symbol:str, qty, price):
         order = None
-
 
         actual_coin = symbol.replace("USDT", "")
 
