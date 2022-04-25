@@ -4,3 +4,4 @@ pandas
 flask
 pytalib
 aiohttp
+dateparser
