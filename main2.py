@@ -89,14 +89,6 @@ for i in range(0, LIMIT):
     print(str(result['prices'][i]) + " " + str(result['dates'][i]) + " " + str(result["RSI"][i]))
 
 
-def applytechnicals(df):
-    df["FastSMA"] = df.Close.rolling(3).mean()
-    df["SlowSMA"] = df.Close.rolling(20).mean()
-
-
-# applytechnicals(temp)
-
-
 def changepos(curr, order, buy=True):
     if buy:
         posframe.loc[posframe.Currency == curr, 'position'] = 1
@@ -150,7 +142,7 @@ def trader(investment=100):
 def sell_everything():
     for coin in posframe[posframe.position == 1].Currency:
         df = get_hourly_data(coin)
-        applytechnicals(df)
+        # applytechnicals(df)
         lastrow = df.iloc[-1]
         closing_price = lastrow.Close
         selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
@@ -166,9 +158,10 @@ def emulate_sell_everything():
     emulated_usdt_balance = 0
     for coin in posframe[posframe.position == 1].Currency:
         df = get_hourly_data(coin)
-        applytechnicals(df)
-        lastrow = df.iloc[-1]
-        closing_price = lastrow.Close
+
+        # applytechnicals(df)
+        # lastrow = df.iloc[-1]
+        closing_price = df["prices"][-1]
         selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
 
         order = client.emulate_place_sell_order(symbol=coin,
