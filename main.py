@@ -100,7 +100,7 @@ def trader(investment=100):
             buy_price = lastrow.Close
 
             order = client.place_buy_order(symbol=coin,
-                                           qty=investment,
+                                           usdt_qty=investment,
                                            price=buy_price)
 
             if order['executedQty'] != 0:

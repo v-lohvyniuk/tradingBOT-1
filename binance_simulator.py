@@ -30,20 +30,20 @@ class ClientMock:
     def klines(self, pair, time_step, limit):
         return self.client.get_klines(symbol=pair, interval=time_step, limit=limit)
 
-    def place_buy_order(self, symbol:str, qty, price):
+    def place_buy_order(self, symbol:str, usdt_qty, price):
         order = None
 
         actual_coin = symbol.replace("USDT", "")
 
-        if self.balances["USDT"] >= qty:
-            self.balances["USDT"] -= qty
+        if self.balances["USDT"] >= usdt_qty:
+            self.balances["USDT"] -= usdt_qty
 
             if actual_coin not in self.balances.keys():
                 self.balances[actual_coin] = 0
 
-            executedQty = qty / price
+            executedQty = usdt_qty / price
             self.balances[actual_coin] += executedQty
-            self.order_history.append([time.ctime(), "BUY", actual_coin, price, qty])
+            self.order_history.append([time.ctime(), "BUY", actual_coin, "COIN Price=" + str(price), "USDT spent=" + str(usdt_qty)])
             order = {"executedQty": executedQty}
         else:
             order = {"executedQty": 0}
@@ -57,7 +57,7 @@ class ClientMock:
         self.balances["USDT"] += price_in_usdt
         self.balances[actual_coin] = 0
 
-        self.order_history.append([time.ctime(), "SELL", actual_coin, price, qty])
+        self.order_history.append([time.ctime(), "SELL", actual_coin, "COIN Price=" + str(price), "USDT gained=" + str(price_in_usdt)])
 
         order = {"executedQty": price_in_usdt}
         return order
