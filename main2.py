@@ -110,7 +110,7 @@ def trader(investment=100):
         last_rsi = hourly_data["RSI"][-1]
         last_closing_price = hourly_data["prices"][-1]
 
-        if last_rsi > 60:
+        if last_rsi > 70:
             # how to get the order price ???? probably this way
             closing_price = last_closing_price
             selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
@@ -126,7 +126,7 @@ def trader(investment=100):
         last_rsi = hourly_data["RSI"][-1]
         last_closing_price = hourly_data["prices"][-1]
 
-        if last_rsi < 50:
+        if last_rsi < 30:
             buy_price = last_closing_price
 
             order = client.place_buy_order(symbol=coin,
