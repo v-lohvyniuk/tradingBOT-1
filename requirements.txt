@@ -6,3 +6,5 @@ pytalib
 aiohttp
 dateparser
 websockets
+sqlalchemy
+psycopg2

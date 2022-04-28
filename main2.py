@@ -1,23 +1,25 @@
 import time
 import os
 
-import numpy as np
 import pandas as pd
 import threading
-from flask import Flask, render_template
+from flask import Flask, redirect, url_for
 
 __name__ = "__main__"
 
+import layout.page
 import rsi_calculator
 
 app = Flask(__name__)
 
 is_thread_started = False
+trading_pause = False
 
 import binance_simulator
 import numpy
 import datetime
 from pytalib.indicators.momentum import RelativeStrengthIndex
+import utils.stringutils as strutils
 
 # client = binance_wrapper.Client()
 client = binance_simulator.ClientMock()
@@ -78,15 +80,15 @@ def get_hourly_data(symbol):
 
     return result
 
-result = get_hourly_data("BTCUSDT")
-
-
-# rsa = RelativeStrengthIndex(result["prices"])
-# rsa.calculate()
-
-
-for i in range(0, LIMIT):
-    print(str(result['prices'][i]) + " " + str(result['dates'][i]) + " " + str(result["RSI"][i]))
+# result = get_hourly_data("BTCUSDT")
+#
+#
+# # rsa = RelativeStrengthIndex(result["prices"])
+# # rsa.calculate()
+#
+#
+# for i in range(0, LIMIT):
+#     print(str(result['prices'][i]) + " " + str(result['dates'][i]) + " " + str(result["RSI"][i]))
 
 
 def changepos(curr, order, buy=True):
@@ -100,7 +102,7 @@ def changepos(curr, order, buy=True):
 
 
 def trader(investment=100):
-    print("SIMULATED BALANCES: " + str(client.get_balances_simulated()))
+    print("SIMULATED BALANCES: " + str(client.get_balances_simulated_from_db()))
 
     for coin in posframe[posframe.position == 1].Currency:
         print(f"Check availability {coin} for SELL trade")
@@ -108,7 +110,7 @@ def trader(investment=100):
         last_rsi = hourly_data["RSI"][-1]
         last_closing_price = hourly_data["prices"][-1]
 
-        if last_rsi > 70:
+        if last_rsi > 60:
             # how to get the order price ???? probably this way
             closing_price = last_closing_price
             selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
@@ -124,7 +126,7 @@ def trader(investment=100):
         last_rsi = hourly_data["RSI"][-1]
         last_closing_price = hourly_data["prices"][-1]
 
-        if last_rsi < 30:
+        if last_rsi < 50:
             buy_price = last_closing_price
 
             order = client.place_buy_order(symbol=coin,
@@ -142,7 +144,7 @@ def trader(investment=100):
 def sell_everything():
     for coin in posframe[posframe.position == 1].Currency:
         df = get_hourly_data(coin)
-        # applytechnicals(df)
+
         lastrow = df.iloc[-1]
         closing_price = lastrow.Close
         selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
@@ -155,41 +157,50 @@ def sell_everything():
 
 
 def emulate_sell_everything():
-    emulated_usdt_balance = 0
-    for coin in posframe[posframe.position == 1].Currency:
-        df = get_hourly_data(coin)
+    emulated_usdt_balance = 0.0
 
-        # applytechnicals(df)
-        # lastrow = df.iloc[-1]
-        closing_price = df["prices"][-1]
-        selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
+    balances = client.get_balances_simulated_from_db()
 
-        order = client.emulate_place_sell_order(symbol=coin,
-                                        qty=selling_qty,
-                                        price=closing_price)
+    for balance in balances:
+        if balance.currency == "USDT":
+            emulated_usdt_balance += balance.amount
+        else:
+            symbol = strutils.get_binance_symbol_out_of_coin(balance.currency)
+            currency_data = get_hourly_data(symbol)
 
-        order_price_in_usdt = order['executedQty']
-        emulated_usdt_balance += order_price_in_usdt
+            closing_price = currency_data["prices"][-1]
+
+            order = client.emulate_place_sell_order(symbol=symbol,
+                                            qty=balance.amount,
+                                            price=closing_price)
+
+            order_price_in_usdt = order['executedQty']
+            emulated_usdt_balance += order_price_in_usdt
 
     return emulated_usdt_balance
 
 
 def do_trade():
     trading_counter = 0
+    global trading_pause
 
     while True:
-        print(f"Trading round: [{trading_counter}]")
-        trader(100)
-        print("Waiting for new trading round. Press key to finish")
-        try:
-            time.sleep(60)
-        except KeyboardInterrupt:
-            print("Loop interrupred, selling everything")
-            final_balance = sell_everything()
-            print("-----------------SOLD EVERYTHING----------------")
-            print("----------------SEE FINAL BAlANCE----------------")
-            print(final_balance)
-            exit(0)
+        if not trading_pause:
+            print(f"Trading round: [{trading_counter}]")
+            trader(100)
+            print("Waiting for new trading round. Press key to finish")
+            try:
+                time.sleep(60)
+            except KeyboardInterrupt:
+                print("Loop interrupred, selling everything")
+                final_balance = sell_everything()
+                print("-----------------SOLD EVERYTHING----------------")
+                print("----------------SEE FINAL BAlANCE----------------")
+                print(final_balance)
+                exit(0)
+        else:
+            # small timeout between checks
+            time.sleep(1)
 
         trading_counter += 1
 
@@ -207,24 +218,39 @@ def start_trading():
 
 
 @app.route("/")
-def hello():
+def root():
     if not is_started_trading():
         start_trading()
 
-    balances = client.get_balances_simulated()
+    balances = client.get_balances_simulated_from_db()
     calculated_current_usdt_balance = emulate_sell_everything()
 
+    order_history = client.get_order_history()
+
     order_history_str = ""
-    for order in client.order_history:
-        order_copy = order.copy()
 
-        order_copy[2] = f'<a target="blank" href="https://www.binance.com/ru/trade/{order[2]}_USDT" >' + order[2] + '</a>'
-        order_history_str += "<p>" + str(order_copy) + "" + "<p/>\n"
+    for order in order_history:
+        order_history_str += "<p>" + repr(order) + "      ------       " + \
+                             f'<a target="blank" href="https://www.binance.com/ru/trade/{order.coin}_USDT" >'\
+                             + order.coin + '</a>' + "<p/>\n"
 
-    return f"<h1> RSI trading bot is UP</h1>" \
-           f"<h4>{balances}</h4> " \
+    return layout.page.body_top() + f"<h1> RSI trading bot - UP</h1>" \
+           f"<h4>DB balances {balances}</h4> " \
            f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>" \
-           f"<h5>{order_history_str}<h5>"
+           f"<p>{order_history_str}<p>" + layout.page.body_bottom()
+
+
+@app.route("/flush")
+def flush():
+    global trading_pause
+    trading_pause = True
+    try:
+        client.flush()
+    except Exception as e:
+        return f"<h1> Error during flushing data: {e}</h1>"
+    finally:
+        trading_pause = False
+        return redirect(url_for("root"))
 
 
 if __name__ == "__main__":
