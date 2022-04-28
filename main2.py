@@ -111,7 +111,6 @@ def trader(investment=100):
         last_closing_price = hourly_data["prices"][-1]
 
         if last_rsi > 70:
-            # how to get the order price ???? probably this way
             closing_price = last_closing_price
             selling_qty = posframe[posframe.Currency == coin].quantity.values[0]
 
@@ -231,7 +230,7 @@ def root():
 
     for order in order_history:
         order_history_str += "<p>" + repr(order) + "      ------       " + \
-                             f'<a target="blank" href="https://www.binance.com/ru/trade/{order.coin}_USDT" >'\
+                             f'<a target="blank" href="https://www.binance.com/uk-UA/trade/{order.coin}_USDT" >'\
                              + order.coin + '</a>' + "<p/>\n"
 
     return layout.page.body_top() + f"<h1> RSI trading bot - UP</h1>" \
