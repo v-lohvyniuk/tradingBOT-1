@@ -8,3 +8,4 @@ dateparser
 websockets
 sqlalchemy
 psycopg2
+matplotlib

@@ -40,8 +40,8 @@ class ClientMock:
         pass
         # return self.client.balances()
 
-    def klines(self, pair, time_step, limit):
-        return self.client.get_klines(symbol=pair, interval=time_step, limit=limit)
+    def klines(self, pair, time_step, limit, **kwargs):
+        return self.client.get_klines(symbol=pair, interval=time_step, limit=limit, **kwargs)
 
     def place_buy_order(self, symbol: str, usdt_qty, price):
         order = None

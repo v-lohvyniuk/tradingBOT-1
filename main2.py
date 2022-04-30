@@ -62,7 +62,11 @@ LIMIT = 100
 
 
 def get_hourly_data(symbol):
-    data = client.klines(symbol, "1h", limit=LIMIT)
+    return get_historical_data(symbol, "1h", limit=LIMIT)
+
+
+def get_historical_data(symbol, candle_interval, limit, **kwargs):
+    data = client.klines(symbol, candle_interval, limit=limit, **kwargs)
     result = {}
     prices = []
     for data_item in data:
@@ -216,43 +220,44 @@ def start_trading():
     thread.start()
 
 
-@app.route("/")
-def root():
-    if not is_started_trading():
-        start_trading()
-
-    balances = client.get_balances_simulated_from_db()
-    calculated_current_usdt_balance = emulate_sell_everything()
-
-    order_history = client.get_order_history()
-
-    order_history_str = ""
-
-    for order in order_history:
-        order_history_str += "<p>" + repr(order) + "      ------       " + \
-                             f'<a target="blank" href="https://www.binance.com/uk-UA/trade/{order.coin}_USDT" >'\
-                             + order.coin + '</a>' + "<p/>\n"
-
-    return layout.page.body_top() + f"<h1> RSI trading bot - UP</h1>" \
-           f"<h4>DB balances {balances}</h4> " \
-           f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>" \
-           f"<p>{order_history_str}<p>" + layout.page.body_bottom()
-
-
-@app.route("/flush")
-def flush():
-    global trading_pause
-    trading_pause = True
-    try:
-        client.flush()
-    except Exception as e:
-        return f"<h1> Error during flushing data: {e}</h1>"
-    finally:
-        trading_pause = False
-        return redirect(url_for("root"))
+# @app.route("/")
+# def root():
+#     if not is_started_trading():
+#         start_trading()
+#
+#     balances = client.get_balances_simulated_from_db()
+#     calculated_current_usdt_balance = emulate_sell_everything()
+#
+#     order_history = client.get_order_history()
+#
+#     order_history_str = ""
+#
+#     for order in order_history:
+#         order_history_str += "<p>" + repr(order) + "      ------       " + \
+#                              f'<a target="blank" href="https://www.binance.com/uk-UA/trade/{order.coin}_USDT" >'\
+#                              + order.coin + '</a>' + "<p/>\n"
+#
+#     return layout.page.body_top() + f"<h1> RSI trading bot - UP</h1>" \
+#            f"<h4>DB balances {balances}</h4> " \
+#            f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>" \
+#            f"<p>{order_history_str}<p>" + layout.page.body_bottom()
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5201))
-    app.run(host='0.0.0.0', port=port)
-
+# @app.route("/flush")
+# def flush():
+#     global trading_pause
+#     trading_pause = True
+#     try:
+#         client.flush()
+#     except Exception as e:
+#         return f"<h1> Error during flushing data: {e}</h1>"
+#     finally:
+#         trading_pause = False
+#         return redirect(url_for("root"))
+#
+#
+# if __name__ == "__main__":
+#     port = int(os.environ.get("PORT", 5201))
+#     app.run(host='0.0.0.0', port=port)
+#
+#
