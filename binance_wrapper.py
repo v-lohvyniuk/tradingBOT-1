@@ -4,7 +4,7 @@ from numpy import ceil
 
 import binance
 import config
-import rsi_calculator
+from utils import rsi_calculator
 import utils.timestamp_utils as utils
 
 ONE_HOUR_IN_MILLIS = 3_600_000
