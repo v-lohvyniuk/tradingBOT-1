@@ -1,63 +1,98 @@
-from numpy import ceil
+import binance_wrapper
+from algorithms import algorithm
+from backtest.data import BacktestResults
+from db.client import Order
+from plots import plot
 
-import main2
-import rsi_calculator
-from utils import timestamp_utils as utils
-
-ONE_HOUR_IN_MILLIS = 3_600_000
-
-historical_data_1 = main2.get_historical_data(symbol="BTCUSDT", candle_interval="1h", limit=10000)
-
-last_date = historical_data_1['dates'][0].timestamp()
-last_date = utils.windows_to_standard_timestamp(last_date)
-last_date_minus_hour = last_date - ONE_HOUR_IN_MILLIS
+binance = binance_wrapper.Client()
 
 
-# 8640 hours in a year
+def backtest_algo(algorithm, historical_data, starting_balance=500, currency="BTCUSDT"):
+    backtest_result = BacktestResults()
+
+    balances = {"USDT": starting_balance}
+    coin = currency.replace("USDT", "")
+
+    size = len(historical_data['dates'])
+    for index in range(0, size):
+        order_buy = check_and_buy(balances, coin, historical_data, index, algorithm, backtest_result.orders)
+        if order_buy is not None:
+            backtest_result.add_buy_order(order_buy)
+
+        order_sell = check_and_sell(balances, coin, historical_data, index, algorithm, backtest_result.orders)
+        if order_sell is not None:
+            backtest_result.add_sell_order(order_sell)
+
+        historical_data["USDT"] = balances['USDT']
+        if coin in balances.keys():
+            historical_data[coin] = balances[coin]
+        else:
+            historical_data[coin] = 0.0
+
+    print("Algorithm Simulation complete")
+
+    # sell everything at the end
+    print(f"Balances {balances}")
+    print(f"Selling everything ... ")
+
+    for curr, amount in balances.items():
+        if curr != "USDT" and amount > 0.0:
+            selling_price = historical_data["prices"][-1]
+            usdt_gained = selling_price * amount
+            balances["USDT"] += usdt_gained
+            balances[coin] = 0.0
+    print(f"Balances {balances}")
+
+    print(f"Final USDT balance is {balances['USDT']}")
+
+    backtest_result.set_final_usdt_result(balances['USDT'])
+
+    return backtest_result
 
 
-def get_historical_data(symbol, candle_interval, limit):
-    MAX_RECORDS_PER_TIME = 1000
-    calling_times = int(ceil(limit / MAX_RECORDS_PER_TIME))
+def check_and_buy(balances, coin, historical_data, index, algorithm, orders):
+    is_able_to_buy = balances["USDT"] > 0.0
 
-    calling_limit = MAX_RECORDS_PER_TIME if limit > MAX_RECORDS_PER_TIME else limit
-
-    historical_data = main2.get_historical_data(symbol=symbol, candle_interval=candle_interval, limit=calling_limit)
-    last_date_timestamp = utils.windows_to_standard_timestamp(historical_data["dates"][0].timestamp())
-    print("Getting historical data.. part 1")
-    last_date_minus_hour = last_date_timestamp - ONE_HOUR_IN_MILLIS
-
-    for i in range(1, calling_times):
-        print(f"Getting historical data.. part {i + 1}")
-
-        temp = main2.get_historical_data(symbol=symbol, candle_interval=candle_interval, limit=calling_limit,
-                                         endTime=last_date_minus_hour)
-        last_date_timestamp = utils.windows_to_standard_timestamp(historical_data["dates"][0].timestamp())
-        last_date_minus_hour = last_date_timestamp - ONE_HOUR_IN_MILLIS
-
-        temp['prices'].extend(historical_data['prices'])
-        temp['dates'].extend(historical_data['dates'])
-
-        historical_data['prices'] = temp['prices']
-        historical_data['dates'] = temp['dates']
-        historical_data['RSI'] = rsi_calculator.calculate_rsi(historical_data["prices"])
-
-    print("Done")
-    return historical_data
+    if is_able_to_buy:
+        should_buy = algorithm(historical_data, index, check_condition="BUY", orders=orders)
+        if should_buy:
+            spent_cost = balances["USDT"]
+            bought_coin = spent_cost / historical_data["prices"][index]
+            balances[coin] = bought_coin
+            balances["USDT"] = 0.0
+            deal_exact_time = historical_data['dates'][index]
+            print(
+                f"[{deal_exact_time}]  Bought coin {coin} at price {historical_data['prices'][index]} with RSI {historical_data['RSI'][index]}")
+            order = Order(time=deal_exact_time, is_buy=True, coin=coin, price=historical_data['prices'][index],
+                          usdt_price=spent_cost)
+            return order
 
 
-historical_data = get_historical_data(symbol="BTCUSDT", candle_interval="1h", limit=3000)
-print("Building plot")
+def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
+    should_sell = algorithm(historical_data, index, check_condition="SELL", orders=orders)
+
+    if should_sell and coin in balances.keys() and balances[coin] > 0.0:
+        coin_balance = balances[coin]
+        gained_usdt = coin_balance * historical_data["prices"][index]
+        balances["USDT"] += gained_usdt
+        balances[coin] = 0.0
+        deal_exact_time = historical_data['dates'][index]
+        print(
+            f"[{deal_exact_time}]  Sold coin {coin} at price {historical_data['prices'][index]} with RSI {historical_data['RSI'][index]}")
+        order = Order(time=deal_exact_time, is_buy=False, coin=coin, price=historical_data['prices'][index],
+                      usdt_price=gained_usdt)
+        return order
 
 
-# plot.build_plot(historical_data['dates'], historical_data['prices'])
-# plot.build_2plots(historical_data['dates'], historical_data['prices'], historical_data['dates'], historical_data['RSI'])
+# symbols_to_backtest = main2.symbols
+symbols_to_backtest = ["LUNAUSDT"]
 
-def backtest_algo(algorithm, historical_data, starting_balance, currency):
-    pass
-# foreach hour
-# for each currency
-# if buy signal and sufficient balance
-# then buy and change balance
-# else if sell signal and have what to sell
-# then sell everything and change usdt balance
+for symbol_to_backtest in symbols_to_backtest:
+    historical_data = binance.get_historical_data(symbol=symbol_to_backtest, candle_interval="1h", limit=2000)
+
+    backtest_result = backtest_algo(algorithm.rsi_on_rise_enhanced, historical_data, 500, symbol_to_backtest)
+
+    plot.build_2plots_with_buy_sell_markers(historical_data['dates'], historical_data['prices'],
+                                            historical_data['dates'], historical_data['RSI'],
+                                            buy_markers=backtest_result.buy_points,
+                                            sell_markers=backtest_result.sell_points)

@@ -1,25 +1,23 @@
-import time
-import os
-
-import pandas as pd
 import threading
+import time
+import pandas as pd
 from flask import Flask, redirect, url_for
+import binance_wrapper
+import layout
+import os
+import layout.page
+import binance_simulator
+import utils.stringutils as strutils
 
 __name__ = "__main__"
 
-import layout.page
-import rsi_calculator
 
+binance = binance_wrapper.Client()
 app = Flask(__name__)
 
 is_thread_started = False
 trading_pause = False
 
-import binance_simulator
-import numpy
-import datetime
-from pytalib.indicators.momentum import RelativeStrengthIndex
-import utils.stringutils as strutils
 
 # client = binance_wrapper.Client()
 client = binance_simulator.ClientMock()
@@ -41,48 +39,12 @@ posframe.to_csv("positioncheck", index=False)
 pd.read_csv("positioncheck")
 
 
-print(client.get_balances())
-
 LIMIT = 100
-
-# [
-#0     1499040000000,  # Open time
-#1     "0.01634790",  # Open
-#2     "0.80000000",  # High
-#3     "0.01575800",  # Low
-#4     "0.01577100",  # Close
-#5     "148976.11427815",  # Volume
-#6     1499644799999,  # Close time
-#7     "2434.19055334",  # Quote asset volume
-#8     308,  # Number of trades
-#     "1756.87402397",  # Taker buy base asset volume
-#     "28.46694368",  # Taker buy quote asset volume
-#     "17928899.62484339"  # Can be ignored
-# ]
 
 
 def get_hourly_data(symbol):
-    return get_historical_data(symbol, "1h", limit=LIMIT)
+    return binance.get_historical_data(symbol, "1h", limit=LIMIT)
 
-
-def get_historical_data(symbol, candle_interval, limit, **kwargs):
-    data = client.klines(symbol, candle_interval, limit=limit, **kwargs)
-    result = {}
-    prices = []
-    for data_item in data:
-        closing_price = float(data_item[4])
-        prices.append(closing_price)
-
-    dates = []
-    for data_item in data:
-        close_time = datetime.datetime.fromtimestamp(data_item[6]/1000)
-        dates.append(close_time)
-
-    result["prices"] = prices
-    result["dates"] = dates
-    result["RSI"] = rsi_calculator.calculate_rsi(result["prices"])
-
-    return result
 
 # result = get_hourly_data("BTCUSDT")
 #
@@ -174,8 +136,8 @@ def emulate_sell_everything():
             closing_price = currency_data["prices"][-1]
 
             order = client.emulate_place_sell_order(symbol=symbol,
-                                            qty=balance.amount,
-                                            price=closing_price)
+                                                    qty=balance.amount,
+                                                    price=closing_price)
 
             order_price_in_usdt = order['executedQty']
             emulated_usdt_balance += order_price_in_usdt
@@ -220,44 +182,45 @@ def start_trading():
     thread.start()
 
 
-# @app.route("/")
-# def root():
-#     if not is_started_trading():
-#         start_trading()
-#
-#     balances = client.get_balances_simulated_from_db()
-#     calculated_current_usdt_balance = emulate_sell_everything()
-#
-#     order_history = client.get_order_history()
-#
-#     order_history_str = ""
-#
-#     for order in order_history:
-#         order_history_str += "<p>" + repr(order) + "      ------       " + \
-#                              f'<a target="blank" href="https://www.binance.com/uk-UA/trade/{order.coin}_USDT" >'\
-#                              + order.coin + '</a>' + "<p/>\n"
-#
-#     return layout.page.body_top() + f"<h1> RSI trading bot - UP</h1>" \
-#            f"<h4>DB balances {balances}</h4> " \
-#            f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>" \
-#            f"<p>{order_history_str}<p>" + layout.page.body_bottom()
+@app.route("/")
+def root():
+    if not is_started_trading():
+        start_trading()
+
+    balances = client.get_balances_simulated_from_db()
+    calculated_current_usdt_balance = emulate_sell_everything()
+
+    order_history = client.get_order_history()
+
+    order_history_str = ""
+
+    for order in order_history:
+        order_history_str += "<p>" + repr(order) + "      ------       " + \
+                             f'<a target="blank" href="https://www.binance.com/uk-UA/trade/{order.coin}_USDT" >' \
+                             + order.coin + '</a>' + "<p/>\n"
+
+    return layout.page.body_top() + f"<h1> RSI trading bot - UP</h1>" \
+                                    f"<h4>DB balances {balances}</h4> " \
+                                    f"<h4>Simulated USDT balance is {calculated_current_usdt_balance}</h4>" \
+                                    f"<p>{order_history_str}<p>" + layout.page.body_bottom()
 
 
-# @app.route("/flush")
-# def flush():
-#     global trading_pause
-#     trading_pause = True
-#     try:
-#         client.flush()
-#     except Exception as e:
-#         return f"<h1> Error during flushing data: {e}</h1>"
-#     finally:
-#         trading_pause = False
-#         return redirect(url_for("root"))
 #
 #
+@app.route("/flush")
+def flush():
+    global trading_pause
+    trading_pause = True
+    try:
+        client.flush()
+    except Exception as e:
+        return f"<h1> Error during flushing data: {e}</h1>"
+    finally:
+        trading_pause = False
+        return redirect(url_for("root"))
+
+
 # if __name__ == "__main__":
 #     port = int(os.environ.get("PORT", 5201))
 #     app.run(host='0.0.0.0', port=port)
-#
 #
