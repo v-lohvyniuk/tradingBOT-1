@@ -14,25 +14,23 @@ def backtest_algo(algorithm, historical_data, starting_balance=500, currency="BT
     coin = currency.replace("USDT", "")
 
     size = len(historical_data['dates'])
+    indexes = []
     for index in range(0, size):
         order_buy = check_and_buy(balances, coin, historical_data, index, algorithm, backtest_result.orders)
         if order_buy is not None:
             backtest_result.add_buy_order(order_buy)
+            indexes.append(index)
 
         order_sell = check_and_sell(balances, coin, historical_data, index, algorithm, backtest_result.orders)
         if order_sell is not None:
             backtest_result.add_sell_order(order_sell)
-
-        historical_data["USDT"] = balances['USDT']
-        if coin in balances.keys():
-            historical_data[coin] = balances[coin]
-        else:
-            historical_data[coin] = 0.0
+            indexes.append(index)
 
     print("Algorithm Simulation complete")
 
-    # sell everything at the end
     print(f"Balances {balances}")
+
+    # sell everything at the end
     print(f"Selling everything ... ")
 
     for curr, amount in balances.items():
@@ -85,10 +83,10 @@ def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
 
 
 # symbols_to_backtest = main2.symbols
-symbols_to_backtest = ["LUNAUSDT"]
+symbols_to_backtest = ["BTCUSDT"]
 
 for symbol_to_backtest in symbols_to_backtest:
-    historical_data = binance.get_historical_data(symbol=symbol_to_backtest, candle_interval="1h", limit=2000)
+    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h", interval="1y")
 
     backtest_result = backtest_algo(algorithm.rsi_on_rise_enhanced, historical_data, 500, symbol_to_backtest)
 

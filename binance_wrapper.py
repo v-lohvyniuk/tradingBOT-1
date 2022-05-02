@@ -1,14 +1,15 @@
 import datetime
 
+from dateutil.relativedelta import relativedelta
 from numpy import ceil
 
 import binance
 import config
-from utils import rsi_calculator
 import utils.timestamp_utils as utils
+from utils import rsi_calculator
 
 ONE_HOUR_IN_MILLIS = 3_600_000
-MAX_RECORDS_PER_TIME = 1000
+MAX_RECORDS_PER_TIME = 720
 
 
 class Client:
@@ -30,7 +31,26 @@ class Client:
     def place_sell_order(self, symbol, qty, price):
         return binance.order(symbol=symbol, side="SELL", orderType="MARKET", quantity=qty, price=price)
 
-    def get_historical_data(self, symbol, candle_interval, limit):
+    def __get_hour_limit_out_of_interval__(self, interval: str):
+        if "y" in interval:
+            number = int(interval.replace("y", ""))
+            now = datetime.datetime.now()
+            year_ago = now - relativedelta(years=number)
+            delta = now - year_ago
+            total_hours = delta.total_seconds() / 3600
+            return total_hours
+
+        if "m" in interval:
+            number = int(interval.replace("m", ""))
+            now = datetime.datetime.now()
+            year_ago = now - relativedelta(months=number)
+            delta = now - year_ago
+            total_hours = delta.total_seconds() / 3600
+            return int(total_hours)
+
+    def get_historical_data_on_interval(self, symbol, candle_interval, interval):
+        limit = self.__get_hour_limit_out_of_interval__(interval)
+
         calling_times = int(ceil(limit / MAX_RECORDS_PER_TIME))
 
         calling_limit = MAX_RECORDS_PER_TIME if limit > MAX_RECORDS_PER_TIME else limit
@@ -42,10 +62,9 @@ class Client:
 
         for i in range(1, calling_times):
             print(f"Getting historical data.. part {i + 1}")
-
             temp = self.get_historical_data(symbol=symbol, candle_interval=candle_interval, limit=calling_limit,
                                             endTime=last_date_minus_hour)
-            last_date_timestamp = utils.windows_to_standard_timestamp(historical_data["dates"][0].timestamp())
+            last_date_timestamp = utils.windows_to_standard_timestamp(temp["dates"][0].timestamp())
             last_date_minus_hour = last_date_timestamp - ONE_HOUR_IN_MILLIS
 
             temp['prices'].extend(historical_data['prices'])
