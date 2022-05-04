@@ -25,3 +25,10 @@ class BacktestResults:
 
     def set_final_usdt_result(self, result):
         self.final_usdt = result
+
+class HistoricalDataItem:
+
+    def __init__(self, price, date, rsi):
+        self.price = price
+        self.date = date
+        self.rsi = rsi

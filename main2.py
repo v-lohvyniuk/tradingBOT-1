@@ -9,9 +9,6 @@ import layout.page
 import binance_simulator
 import utils.stringutils as strutils
 
-__name__ = "__main__"
-
-
 binance = binance_wrapper.Client()
 app = Flask(__name__)
 
