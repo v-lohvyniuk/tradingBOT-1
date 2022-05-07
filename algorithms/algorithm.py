@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def rsi_on_rise(historical_data, index, check_condition, **kwargs):
     if check_condition == "BUY":
         rsi_index = historical_data["RSI"][index]
@@ -46,6 +47,30 @@ def rsi(historical_data, index, check_condition, **kwargs):
         return rsi_index > 70
 
 
+def rsi_vwap(historical_data, index, check_condition, **kwargs):
+    if check_condition == "BUY":
+        rsi_index = historical_data["RSI-VWAP"][index]
+        return rsi_index < 10
+    elif check_condition == "SELL":
+        rsi_index = historical_data["RSI-VWAP"][index]
+        return rsi_index > 90
+
+
+def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs):
+    if check_condition == "BUY":
+        rsi_index = historical_data["RSI-VWAP"][index]
+        return rsi_index < 5
+    elif check_condition == "SELL":
+        rsi_index = historical_data["RSI-VWAP"][index]
+        condition1 = rsi_index > 95
+        orders = kwargs.get("orders")
+        stop_loss_condition = False
+        if len(orders) != 0:
+            stop_loss_condition = __is_stop_loss_condition(historical_data, index, orders[-1])
+
+        return condition1 or stop_loss_condition
+
+
 MAX_INTERVAL_OVER_2_OVERSOLDS_H = 24 * 10
 STOP_LOSS_THRESHOLD_PERCENT = 3
 SAFE_EXIT_GAIN_PERCENT = 7
@@ -67,13 +92,22 @@ def __is_save_exit_condition(historical_data, index, last_order):
     print(f"{historical_data['dates'][index]} - Condition SAFE_EXIT fulfilled: {condition_fulfilled}")
     return condition_fulfilled
 
+
 def is_price_forming_uptrend(historical_data, index, ma_interval):
     checking_interval = historical_data['prices'][index - 3: index + 1]
     is_forming_uptrend = np.all(np.diff(moving_average(np.array(checking_interval), n=ma_interval)) > 0)
     print(f"{historical_data['dates'][index]} - is forming uptrend = true")
     return is_forming_uptrend
 
-def moving_average(a, n=3) :
+
+def is_price_forming_downtrend(historical_data, index, ma_interval):
+    checking_interval = historical_data['prices'][index - 3: index + 1]
+    is_forming_uptrend = np.all(np.diff(moving_average(np.array(checking_interval), n=ma_interval)) < 0)
+    print(f"{historical_data['dates'][index]} - is forming uptrend = true")
+    return is_forming_uptrend
+
+
+def moving_average(a, n=3):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
@@ -105,7 +139,8 @@ def rsi_divergence(historical_data, index, check_condition, **kwargs):
 
                 secnd_interval = __find_second_rsi_interval(historical_data, index)
                 print("_______________________________")
-                print(f"Second interval at dates {historical_data['dates'][secnd_interval[0]]} - {historical_data['dates'][secnd_interval[1]]}")
+                print(
+                    f"Second interval at dates {historical_data['dates'][secnd_interval[0]]} - {historical_data['dates'][secnd_interval[1]]}")
 
                 # plot.build_2plots(historical_data["dates"][0:index + 2], historical_data["prices"][0:index + 2], historical_data["dates"][0:index + 2], historical_data["RSI"][0:index + 2])
                 arg = secnd_interval[0] - MAX_INTERVAL_OVER_2_OVERSOLDS_H
@@ -133,7 +168,7 @@ def rsi_divergence(historical_data, index, check_condition, **kwargs):
     elif check_condition == "SELL":
         rsi_index = historical_data["RSI"][index]
 
-        condition_sell = rsi_index >= 69
+        condition_sell = rsi_index >= 70
         condition_stop_loss = False
         condition_safe_exit = False
 
@@ -169,7 +204,7 @@ def __find_first_rsi_interval(historical_data, end_index):
     ind = first_ind_of_below30
     temp_rsi = historical_data["RSI"][ind]
     while temp_rsi < 30:
-        temp_rsi = historical_data["RSI"][ind -1]
+        temp_rsi = historical_data["RSI"][ind - 1]
         if temp_rsi < 30:
             ind -= 1
     return [ind, first_ind_of_below30]
@@ -188,7 +223,6 @@ def __is_divergence_exist(historical_data, first_interval, second_interval):
     else:
         min_rsi_on_second_interval = historical_data["RSI"][second_interval[0]]
 
-
     if min_rsi_on_first_interval < min_rsi_on_second_interval:
         print("First RSI condition is met, checking for second")
         first_interval_min_index = None
@@ -204,8 +238,10 @@ def __is_divergence_exist(historical_data, first_interval, second_interval):
         is_first_rsi_lower_than_second = min_rsi_on_first_interval < min_rsi_on_second_interval
         is_first_price_higher_than_second = historical_data["prices"][first_interval_min_index] > \
                                             historical_data["prices"][second_interval_min_index]
-        print(f"Second divergence condition is met : {is_first_price_higher_than_second}, prices: [{historical_data['prices'][first_interval_min_index]}], [{historical_data['prices'][second_interval_min_index]}]")
+        print(
+            f"Second divergence condition is met : {is_first_price_higher_than_second}, prices: [{historical_data['prices'][first_interval_min_index]}], [{historical_data['prices'][second_interval_min_index]}]")
         return is_first_rsi_lower_than_second and is_first_price_higher_than_second
     else:
-        print(f"First divergence condition is met: false, min RSI[1] ({min_rsi_on_first_interval} is not less than min RSI[2] {min_rsi_on_second_interval}")
+        print(
+            f"First divergence condition is met: false, min RSI[1] ({min_rsi_on_first_interval} is not less than min RSI[2] {min_rsi_on_second_interval}")
         return False

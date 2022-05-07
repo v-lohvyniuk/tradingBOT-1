@@ -46,8 +46,10 @@ def build_2plots_with_buy_sell_markers(x_axis, y_axis, x2_axis, y2_axis, buy_mar
 
     sub2.plot(x2_axis, y2_axis)
 
+    sub2.hlines(y=20.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dotted')
     sub2.hlines(y=30.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
     sub2.hlines(y=70.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
+    sub2.hlines(y=80.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dotted')
 
     plt.subplots_adjust(hspace=.0)
     plt.show()

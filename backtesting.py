@@ -86,12 +86,12 @@ def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
 symbols_to_backtest = ["LUNAUSDT"]
 
 for symbol_to_backtest in symbols_to_backtest:
-    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h", interval="1m")
+    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h", interval="1y")
 
-    backtest_result = backtest_algo(algorithm.rsi_on_rise, historical_data, 500, symbol_to_backtest)
+    backtest_result = backtest_algo(algorithm.rsi_vwap, historical_data, 500, symbol_to_backtest)
 
     plot.build_2plots_with_buy_sell_markers(historical_data['dates'], historical_data['prices'],
-                                            historical_data['dates'], historical_data['RSI'],
+                                            historical_data['dates'], historical_data['RSI-VWAP'],
                                             buy_markers=backtest_result.buy_points,
                                             sell_markers=backtest_result.sell_points)
 

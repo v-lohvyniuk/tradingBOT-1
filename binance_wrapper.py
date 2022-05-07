@@ -6,7 +6,7 @@ from numpy import ceil
 import binance
 import config
 import utils.timestamp_utils as utils
-from utils import rsi_calculator
+from utils import rsi_calculator, vwap_calculator
 
 ONE_HOUR_IN_MILLIS = 3_600_000
 MAX_RECORDS_PER_TIME = 720
@@ -68,30 +68,63 @@ class Client:
             last_date_minus_hour = last_date_timestamp - ONE_HOUR_IN_MILLIS
 
             temp['prices'].extend(historical_data['prices'])
+            temp['highs'].extend(historical_data['highs'])
+            temp['lows'].extend(historical_data['lows'])
+            temp['volumes'].extend(historical_data['volumes'])
             temp['dates'].extend(historical_data['dates'])
 
             historical_data['prices'] = temp['prices']
+            historical_data['highs'] = temp['highs']
+            historical_data['lows'] = temp['lows']
+            historical_data['volumes'] = temp['volumes']
             historical_data['dates'] = temp['dates']
-            historical_data['RSI'] = rsi_calculator.calculate_rsi(historical_data["prices"])
-
+        historical_data['RSI'] = rsi_calculator.calculate_rsi(historical_data["prices"])
+        historical_data["VWAP"] = vwap_calculator.calculate_vwap(historical_data)
+        historical_data["RSI-VWAP"] = rsi_calculator.calculate_rsi(historical_data['VWAP'])
         print("Done")
         return historical_data
 
+    # 1499040000000,  # Open time
+    # "0.01634790",  # Open
+    # "0.80000000",  # High
+    # "0.01575800",  # Low
+    # "0.01577100",  # Close
+    # "148976.11427815",  # Volume
+    # 1499644799999,  # Close time
+    # "2434.19055334",  # Quote asset volume
+    # 308,  # Number of trades
+    # "1756.87402397",  # Taker buy base asset volume
+    # "28.46694368",  # Taker buy quote asset volume
+    # "17928899.62484339"  # Can be ignored
     def get_historical_data(self, symbol, candle_interval, limit, **kwargs):
         data = self.klines(symbol, candle_interval, limit=limit, **kwargs)
         result = {}
-        prices = []
-        for data_item in data:
-            closing_price = float(data_item[4])
-            prices.append(closing_price)
-
+        closing_prices = []
+        high_prices = []
+        low_prices = []
+        volumes = []
         dates = []
+
         for data_item in data:
+            high_price = float(data_item[2])
+            high_prices.append(high_price)
+
+            low_price = float(data_item[3])
+            low_prices.append(low_price)
+
+            closing_price = float(data_item[4])
+            closing_prices.append(closing_price)
+
+            volume = float(data_item[5])
+            volumes.append(volume)
+
             close_time = datetime.datetime.fromtimestamp(data_item[6] / 1000)
             dates.append(close_time)
 
-        result["prices"] = prices
+        result["prices"] = closing_prices
         result["dates"] = dates
-        result["RSI"] = rsi_calculator.calculate_rsi(result["prices"])
+        result["lows"] = low_prices
+        result["highs"] = high_prices
+        result["volumes"] = high_prices
 
         return result
