@@ -83,14 +83,20 @@ def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
 
 
 # symbols_to_backtest = main2.symbols
-symbols_to_backtest = ["BTCUSDT"]
+symbols_to_backtest = ["LUNAUSDT"]
 
 for symbol_to_backtest in symbols_to_backtest:
-    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h", interval="1y")
+    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h", interval="1m")
 
-    backtest_result = backtest_algo(algorithm.rsi_on_rise_enhanced, historical_data, 500, symbol_to_backtest)
+    backtest_result = backtest_algo(algorithm.rsi_on_rise, historical_data, 500, symbol_to_backtest)
 
     plot.build_2plots_with_buy_sell_markers(historical_data['dates'], historical_data['prices'],
                                             historical_data['dates'], historical_data['RSI'],
                                             buy_markers=backtest_result.buy_points,
                                             sell_markers=backtest_result.sell_points)
+
+    # plot.build_2plots_with_buy_sell_markers(range(0, len(historical_data["dates"])), historical_data['prices'],
+    #                                         range(0, len(historical_data["dates"])), historical_data['RSI'],
+    #                                         buy_markers=backtest_result.buy_points,
+    #                                         sell_markers=backtest_result.sell_points)
+#
