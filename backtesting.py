@@ -3,7 +3,6 @@ from algorithms import algorithm
 from backtest.data import BacktestResults
 from db.client import Order
 from plots import plot
-import main2
 
 binance = binance_wrapper.Client()
 
@@ -87,9 +86,14 @@ symbols_to_backtest = ["LUNAUSDT"]
 
 backtest_results = []
 for symbol_to_backtest in symbols_to_backtest:
-    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h", interval="1m")
+    historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h",
+                                                              interval="1y")
 
     backtest_result = backtest_algo(algorithm.rsi_vwap_stop_loss, historical_data, 500, symbol_to_backtest)
+
+    print("COIN: " + backtest_result.coin)
+    print("Final USDT balance: " + str(backtest_result.final_usdt))
+    print("Number of sales: " + str(len(backtest_result.orders) / 2))
 
     plot.build_2plots_with_buy_sell_markers(historical_data['dates'], historical_data['prices'],
                                             historical_data['dates'], historical_data['RSI-VWAP'],
@@ -100,7 +104,3 @@ for symbol_to_backtest in symbols_to_backtest:
     #                                         range(0, len(historical_data["dates"])), historical_data['RSI'],
     #                                         buy_markers=backtest_result.buy_points,
     #                                         sell_markers=backtest_result.sell_points)
-
-for bt in backtest_results:
-    print("COIN: " + bt.coin)
-    print("Final USDT balance: " + bt.final_udst)

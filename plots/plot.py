@@ -46,15 +46,15 @@ def build_2plots_with_buy_sell_markers(x_axis, y_axis, x2_axis, y2_axis, buy_mar
     fig, (sub1, sub2) = plt.subplots(2, sharex=True, gridspec_kw={'height_ratios': [3, 1]})
     fig.patch.set_facecolor(PLOTS_BORDER_COLOR_HEX)
     lines = sub1.plot(x_axis, y_axis)
-    mplcursors.cursor()
+    mplcursors.cursor(lines)
     for x, y in buy_markers:
         __annotate__(sub1, (x, y), "BUY", color='green')
 
     for x, y in sell_markers:
         __annotate__(sub1, (x, y), "SELL", color='red')
 
-    sub2.plot(x2_axis, y2_axis)
-
+    lines2 = sub2.plot(x2_axis, y2_axis)
+    mplcursors.cursor(lines2)
     sub1.grid()
     sub2.grid()
 

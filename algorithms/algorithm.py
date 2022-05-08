@@ -56,20 +56,50 @@ def rsi_vwap(historical_data, index, check_condition, **kwargs):
         rsi_index = historical_data["RSI-VWAP"][index]
         return rsi_index > 87
 
+
 # this one has max gain on LUNA
 def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs):
+    RSI_PEAK = 89
     if check_condition == "BUY":
+        main_condition = False
         rsi_index = historical_data["RSI-VWAP"][index]
-        return rsi_index < 10
+        main_condition = rsi_index < 10
+        not_right_after_stop_loss_condition = True
+
+        orders = kwargs.get("orders")
+        # check last order
+        if len(orders) > 0 and not orders[-1].is_buy:
+            if orders[-1].sell_reason == "STOP_LOSS":
+                # find last peak
+                ind = index
+                rsi_temp = rsi_index
+                while rsi_temp < RSI_PEAK:
+                    ind -= 1
+                    rsi_temp = historical_data["RSI-VWAP"][ind]
+                # todo implement how pass stop loss through the algorithm
+                # ideally algorithm should return an Action
+                # with fields DO_NOTHING, BUY, SELL and reasons (STOP_LOSS, SUFFICIENT_CONDITION, etc... )
+
+                date_of_last_peak = historical_data["dates"][ind]
+                not_right_after_stop_loss_condition = orders[-1].time < date_of_last_peak
+
+        return main_condition and not_right_after_stop_loss_condition
     elif check_condition == "SELL":
         rsi_index = historical_data["RSI-VWAP"][index]
-        first_condition = rsi_index > 87
+        first_condition = rsi_index > RSI_PEAK
         second_condition = False
-        if len(kwargs.get("orders")) > 0:
+
+        if (len(kwargs.get("orders")) > 0):
             last_order = kwargs.get("orders")[-1]
             buying_price = last_order.price
             current_price = historical_data["prices"][index]
-            second_condition = rsi_index > 80 and current_price / buying_price >= 1.1
+            second_condition = current_price / buying_price < 0.9
+
+        # if len(kwargs.get("orders")) > 0:
+        #     last_order = kwargs.get("orders")[-1]
+        #     buying_price = last_order.price
+        #     current_price = historical_data["prices"][index]
+        #     second_condition = rsi_index > 80 and current_price / buying_price >= 1.1
         return first_condition or second_condition
 
 
