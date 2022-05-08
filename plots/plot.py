@@ -1,5 +1,12 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+import mplcursors
+import numpy as np
 
+# mpl.style.use("seaborn")
+
+PLOTS_COLOR_HEX = "#dadbeb"
+PLOTS_BORDER_COLOR_HEX = "#c2c3c4"
 
 def __annotate__(plot, coords, text, color):
     plot.annotate(
@@ -23,8 +30,9 @@ def build_plot(x_axis, y_axis, xlabel="X", ylabel="Y", title="Title"):
 
 def build_2plots(x_axis, y_axis, x2_axis, y2_axis, xlabel="X", ylabel="Y", title="Title"):
     fig, (sub1, sub2) = plt.subplots(2, gridspec_kw={'height_ratios': [3, 1]})
-    sub1.plot(x_axis, y_axis)
+    lines = sub1.plot(x_axis, y_axis)
     sub2.plot(x2_axis, y2_axis)
+    # mplcursors.cursor(lines)
 
     sub2.hlines(y=30.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
     sub2.hlines(y=70.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
@@ -36,8 +44,9 @@ def build_2plots(x_axis, y_axis, x2_axis, y2_axis, xlabel="X", ylabel="Y", title
 def build_2plots_with_buy_sell_markers(x_axis, y_axis, x2_axis, y2_axis, buy_markers, sell_markers, xlabel="X",
                                        ylabel="Y", title="Title"):
     fig, (sub1, sub2) = plt.subplots(2, sharex=True, gridspec_kw={'height_ratios': [3, 1]})
-    sub1.plot(x_axis, y_axis)
-
+    fig.patch.set_facecolor(PLOTS_BORDER_COLOR_HEX)
+    lines = sub1.plot(x_axis, y_axis)
+    mplcursors.cursor()
     for x, y in buy_markers:
         __annotate__(sub1, (x, y), "BUY", color='green')
 
@@ -46,10 +55,16 @@ def build_2plots_with_buy_sell_markers(x_axis, y_axis, x2_axis, y2_axis, buy_mar
 
     sub2.plot(x2_axis, y2_axis)
 
-    sub2.hlines(y=20.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dotted')
-    sub2.hlines(y=30.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
-    sub2.hlines(y=70.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
-    sub2.hlines(y=80.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dotted')
+    sub1.grid()
+    sub2.grid()
+
+    sub1.set_facecolor(PLOTS_COLOR_HEX)
+    sub2.set_facecolor(PLOTS_COLOR_HEX)
+
+    # sub2.hlines(y=20.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dotted')
+    # sub2.hlines(y=30.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
+    # sub2.hlines(y=70.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dashed')
+    # sub2.hlines(y=80.0, xmin=x2_axis[0], xmax=x2_axis[-1], linewidth=1, color='r', linestyles='dotted')
 
     plt.subplots_adjust(hspace=.0)
     plt.show()

@@ -9,3 +9,4 @@ websockets
 sqlalchemy
 psycopg2
 matplotlib
+mplcursors

@@ -47,28 +47,60 @@ def rsi(historical_data, index, check_condition, **kwargs):
         return rsi_index > 70
 
 
+# this one has max gain on LUNA
 def rsi_vwap(historical_data, index, check_condition, **kwargs):
     if check_condition == "BUY":
         rsi_index = historical_data["RSI-VWAP"][index]
         return rsi_index < 10
     elif check_condition == "SELL":
         rsi_index = historical_data["RSI-VWAP"][index]
-        return rsi_index > 90
+        return rsi_index > 87
 
-
+# this one has max gain on LUNA
 def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs):
     if check_condition == "BUY":
         rsi_index = historical_data["RSI-VWAP"][index]
-        return rsi_index < 5
+        return rsi_index < 10
     elif check_condition == "SELL":
         rsi_index = historical_data["RSI-VWAP"][index]
-        condition1 = rsi_index > 95
-        orders = kwargs.get("orders")
-        stop_loss_condition = False
-        if len(orders) != 0:
-            stop_loss_condition = __is_stop_loss_condition(historical_data, index, orders[-1])
+        first_condition = rsi_index > 87
+        second_condition = False
+        if len(kwargs.get("orders")) > 0:
+            last_order = kwargs.get("orders")[-1]
+            buying_price = last_order.price
+            current_price = historical_data["prices"][index]
+            second_condition = rsi_index > 80 and current_price / buying_price >= 1.1
+        return first_condition or second_condition
 
-        return condition1 or stop_loss_condition
+
+def rsi_vwap2(historical_data, index, check_condition, **kwargs):
+    if check_condition == "BUY":
+        rsi_index = historical_data["RSI-VWAP"][index]
+        condition1 = rsi_index < 10
+        condition_started_growing_high = historical_data["RSI-VWAP"][index - 3] > historical_data["RSI-VWAP"][
+            index - 2] > historical_data["RSI-VWAP"][index - 1]
+        condition_started_growing_high = condition_started_growing_high and historical_data["RSI-VWAP"][index - 1] < \
+                                         historical_data["RSI-VWAP"][index]
+
+        return condition1 and condition_started_growing_high
+    elif check_condition == "SELL":
+        rsi_index = historical_data["RSI-VWAP"][index]
+        return rsi_index > 90
+
+
+# def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs):
+#     if check_condition == "BUY":
+#         rsi_index = historical_data["RSI-VWAP"][index]
+#         return rsi_index < 5
+#     elif check_condition == "SELL":
+#         rsi_index = historical_data["RSI-VWAP"][index]
+#         condition1 = rsi_index > 95
+#         orders = kwargs.get("orders")
+#         stop_loss_condition = False
+#         if len(orders) != 0:
+#             stop_loss_condition = __is_stop_loss_condition(historical_data, index, orders[-1])
+#
+#         return condition1 or stop_loss_condition
 
 
 MAX_INTERVAL_OVER_2_OVERSOLDS_H = 24 * 10

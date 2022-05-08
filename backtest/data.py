@@ -4,6 +4,7 @@ from db.client import Order
 class BacktestResults:
 
     def __init__(self):
+        self.coin = None
         self.final_usdt = None
         self.buy_points = []
         self.sell_points = []
