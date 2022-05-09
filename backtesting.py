@@ -51,7 +51,8 @@ def check_and_buy(balances, coin, historical_data, index, algorithm, orders):
     is_able_to_buy = balances["USDT"] > 0.0
 
     if is_able_to_buy:
-        should_buy = algorithm(historical_data, index, check_condition="BUY", orders=orders)
+        algo_return = algorithm(historical_data, index, check_condition="BUY", orders=orders)
+        should_buy = algo_return.should_buy()
         if should_buy:
             spent_cost = balances["USDT"]
             bought_coin = spent_cost / historical_data["prices"][index]
@@ -61,12 +62,13 @@ def check_and_buy(balances, coin, historical_data, index, algorithm, orders):
             print(
                 f"[{deal_exact_time}]  Bought coin {coin} at price {historical_data['prices'][index]} with RSI {historical_data['RSI'][index]}")
             order = Order(time=deal_exact_time, is_buy=True, coin=coin, price=historical_data['prices'][index],
-                          usdt_price=spent_cost)
+                          usdt_price=spent_cost, reason=algo_return.get_reason())
             return order
 
 
 def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
-    should_sell = algorithm(historical_data, index, check_condition="SELL", orders=orders)
+    algo_return = algorithm(historical_data, index, check_condition="SELL", orders=orders)
+    should_sell = algo_return.should_sell()
 
     if should_sell and coin in balances.keys() and balances[coin] > 0.0:
         coin_balance = balances[coin]
@@ -77,7 +79,7 @@ def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
         print(
             f"[{deal_exact_time}]  Sold coin {coin} at price {historical_data['prices'][index]} with RSI {historical_data['RSI'][index]}")
         order = Order(time=deal_exact_time, is_buy=False, coin=coin, price=historical_data['prices'][index],
-                      usdt_price=gained_usdt)
+                      usdt_price=gained_usdt, reason=algo_return.get_reason())
         return order
 
 
@@ -95,10 +97,19 @@ for symbol_to_backtest in symbols_to_backtest:
     print("Final USDT balance: " + str(backtest_result.final_usdt))
     print("Number of sales: " + str(len(backtest_result.orders) / 2))
 
-    plot.build_2plots_with_buy_sell_markers(historical_data['dates'], historical_data['prices'],
-                                            historical_data['dates'], historical_data['RSI-VWAP'],
-                                            buy_markers=backtest_result.buy_points,
-                                            sell_markers=backtest_result.sell_points)
+    plot.build_2plots_with_buy_sell_markers(
+        first_plot_data=
+        [
+            [historical_data['dates'], historical_data['prices']],
+            # [historical_data['dates'], historical_data['MA-200']],
+            # [historical_data['dates'], historical_data['MA-50']],
+            # [historical_data['dates'], historical_data['MA-20']],
+        ],
+        second_plot_data=
+        [[historical_data['dates'], historical_data['RSI-VWAP']]],
+
+        buy_markers=backtest_result.buy_points,
+        sell_markers=backtest_result.sell_points)
 
     # plot.build_2plots_with_buy_sell_markers(range(0, len(historical_data["dates"])), historical_data['prices'],
     #                                         range(0, len(historical_data["dates"])), historical_data['RSI'],

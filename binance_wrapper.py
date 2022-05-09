@@ -6,7 +6,7 @@ from numpy import ceil
 import binance
 import config
 import utils.timestamp_utils as utils
-from utils import rsi_calculator, vwap_calculator
+from utils import rsi_calculator, vwap_calculator, ma_calculator
 
 ONE_HOUR_IN_MILLIS = 3_600_000
 MAX_RECORDS_PER_TIME = 720
@@ -81,6 +81,9 @@ class Client:
         historical_data['RSI'] = rsi_calculator.calculate_rsi(historical_data["prices"])
         historical_data["VWAP"] = vwap_calculator.calculate_vwap(historical_data)
         historical_data["RSI-VWAP"] = rsi_calculator.calculate_rsi(historical_data['VWAP'])
+        historical_data["MA-50"] = ma_calculator.calculate_sma(historical_data, period=50)
+        historical_data["MA-200"] = ma_calculator.calculate_sma(historical_data, period=200)
+        historical_data["MA-20"] = ma_calculator.calculate_sma(historical_data, period=20)
         print("Done")
         return historical_data
 

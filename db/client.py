@@ -31,8 +31,7 @@ class Order(Base):
     coin = Column(String)
     price = Column(Float)
     usdt_price = Column(Float)
-    # only in case it's sell orders
-    sell_reason = Column(String)
+    reason = Column(String)
 
     def by_or_sell(self):
         if self.is_buy:

@@ -1,5 +1,7 @@
 import numpy as np
 
+from algorithms.support import AlgoProcessingResult, Action, Reason
+
 
 def rsi_on_rise(historical_data, index, check_condition, **kwargs):
     if check_condition == "BUY":
@@ -58,8 +60,11 @@ def rsi_vwap(historical_data, index, check_condition, **kwargs):
 
 
 # this one has max gain on LUNA
-def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs):
+def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs) -> AlgoProcessingResult:
+    return_result = None
     RSI_PEAK = 89
+    RSI_PEAK_SMALL = 20
+
     if check_condition == "BUY":
         main_condition = False
         rsi_index = historical_data["RSI-VWAP"][index]
@@ -69,38 +74,50 @@ def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs):
         orders = kwargs.get("orders")
         # check last order
         if len(orders) > 0 and not orders[-1].is_buy:
-            if orders[-1].sell_reason == "STOP_LOSS":
-                # find last peak
+            if orders[-1].reason == Reason.StopLoss.name:
                 ind = index
                 rsi_temp = rsi_index
-                while rsi_temp < RSI_PEAK:
+                while rsi_temp < RSI_PEAK_SMALL:
                     ind -= 1
                     rsi_temp = historical_data["RSI-VWAP"][ind]
-                # todo implement how pass stop loss through the algorithm
-                # ideally algorithm should return an Action
-                # with fields DO_NOTHING, BUY, SELL and reasons (STOP_LOSS, SUFFICIENT_CONDITION, etc... )
 
                 date_of_last_peak = historical_data["dates"][ind]
                 not_right_after_stop_loss_condition = orders[-1].time < date_of_last_peak
 
-        return main_condition and not_right_after_stop_loss_condition
+        if not main_condition:
+            return_result = AlgoProcessingResult(action=Action.NotBuy, reason=Reason.MainCriteriaNotMatch)
+        elif main_condition and not_right_after_stop_loss_condition:
+            return_result = AlgoProcessingResult(action=Action.Buy, reason=Reason.MainCriteriaMatch)
+        elif main_condition and not not_right_after_stop_loss_condition:
+            return_result = AlgoProcessingResult(action=Action.NotBuy, reason=Reason.AfterStopLoss)
+
     elif check_condition == "SELL":
         rsi_index = historical_data["RSI-VWAP"][index]
-        first_condition = rsi_index > RSI_PEAK
-        second_condition = False
+        main_condition = rsi_index > RSI_PEAK
+        stop_loss_condition = False
 
         if (len(kwargs.get("orders")) > 0):
             last_order = kwargs.get("orders")[-1]
             buying_price = last_order.price
             current_price = historical_data["prices"][index]
-            second_condition = current_price / buying_price < 0.9
+            stop_loss_condition = current_price / buying_price < 0.9
 
         # if len(kwargs.get("orders")) > 0:
         #     last_order = kwargs.get("orders")[-1]
         #     buying_price = last_order.price
         #     current_price = historical_data["prices"][index]
         #     second_condition = rsi_index > 80 and current_price / buying_price >= 1.1
-        return first_condition or second_condition
+
+        if main_condition:
+            return_result = AlgoProcessingResult(action=Action.Sell, reason=Reason.MainCriteriaMatch)
+        elif stop_loss_condition:
+            return_result = AlgoProcessingResult(action=Action.Sell, reason=Reason.StopLoss)
+        else:
+            return_result = AlgoProcessingResult(action=Action.NotSell, reason=Reason.MainCriteriaNotMatch)
+
+    assert return_result is not None
+
+    return return_result
 
 
 def rsi_vwap2(historical_data, index, check_condition, **kwargs):
