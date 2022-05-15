@@ -1,5 +1,6 @@
 import numpy as np
 
+from config import AlgoConfig
 from algorithms.support import AlgoProcessingResult, Action, Reason
 
 
@@ -62,13 +63,14 @@ def rsi_vwap(historical_data, index, check_condition, **kwargs):
 # this one has max gain on LUNA
 def rsi_vwap_stop_loss(historical_data, index, check_condition, **kwargs) -> AlgoProcessingResult:
     return_result = None
-    RSI_PEAK = 89
-    RSI_PEAK_SMALL = 20
+    RSI_PEAK = AlgoConfig.rsi_vwap_stop_loss.RSI_PEAK
+    RSI_PEAK_SMALL = AlgoConfig.rsi_vwap_stop_loss.RSI_PEAK_SMALL
+    RSI_BUY = AlgoConfig.rsi_vwap_stop_loss.RSI_BUY
 
     if check_condition == "BUY":
         main_condition = False
         rsi_index = historical_data["RSI-VWAP"][index]
-        main_condition = rsi_index < 10
+        main_condition = rsi_index < RSI_BUY
         not_right_after_stop_loss_condition = True
 
         orders = kwargs.get("orders")

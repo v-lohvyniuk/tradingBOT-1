@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from dateutil.relativedelta import relativedelta
 from numpy import ceil
@@ -7,6 +8,7 @@ import binance
 import config
 import utils.timestamp_utils as utils
 from utils import rsi_calculator, vwap_calculator, ma_calculator
+import utils.calculations as calc
 
 ONE_HOUR_IN_MILLIS = 3_600_000
 MAX_RECORDS_PER_TIME = 720
@@ -20,16 +22,53 @@ class Client:
         self.binance = binance.client.Client(self.api_key, self.secret_key)
 
     def balances(self):
-        return binance.balances()
+        return self.binance.get_asset_balance("USDT")
+
+    def balance(self, coin):
+        return self.binance.get_asset_balance(coin)
 
     def klines(self, pair, time_step, limit, **kwargs):
         return self.binance.get_klines(symbol=pair, interval=time_step, limit=limit, **kwargs)
 
-    def place_buy_order(self, symbol, qty, price):
-        return binance.order(symbol=symbol, side="BUY", orderType="MARKET", quantity=qty, price=price)
+    def place_buy_order(self, symbol, qty):
+        try:
+            symbol_info = self.get_symbol_info(symbol)
+            # precision = symbol_info['baseAssetPrecision']
+            qty = calc.round_down(qty * 0.99, precision=1)
 
-    def place_sell_order(self, symbol, qty, price):
-        return binance.order(symbol=symbol, side="SELL", orderType="MARKET", quantity=qty, price=price)
+            return self.binance.order_market_buy(symbol=symbol, quantity=qty)
+        except Exception as e:
+            print(e)
+            raise e
+
+    def place_test_order(self, symbol, qty, price):
+        return self.binance.create_test_order(symbol=symbol, side="MARKET", type="SELL", quantity=qty, price=price)
+
+    def place_sell_order(self, symbol, qty):
+        try:
+            qty = calc.round_down(qty, 1)
+            return self.binance.order_market_sell(symbol=symbol, quantity=qty)
+        except Exception as e:
+            print(e)
+            raise e
+
+    def get_order(self, order_id, symbol):
+        return self.binance.get_order(orderId=order_id, symbol=symbol)
+
+    def wait_for_order_status(self, order_id, symbol, expected_statuses):
+        order = self.get_order(order_id, symbol)
+        order_status = order["status"]
+        startdate = datetime.datetime.now()
+        while order_status not in expected_statuses:
+            print(f"Current order status is [{order_status}], waiting to be in one of [{expected_statuses}]")
+            time.sleep(5)
+            order_status = self.get_order(order_id, symbol)["status"]
+
+            if (datetime.datetime.now() - startdate) > relativedelta(hours=1):
+                print("WARNING: ORDER TIMED OUT")
+
+    def get_symbol_info(self, symbol):
+        return self.binance.get_symbol_info(symbol)
 
     def __get_hour_limit_out_of_interval__(self, interval: str):
         if "y" in interval:

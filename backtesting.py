@@ -53,6 +53,7 @@ def check_and_buy(balances, coin, historical_data, index, algorithm, orders):
     if is_able_to_buy:
         algo_return = algorithm(historical_data, index, check_condition="BUY", orders=orders)
         should_buy = algo_return.should_buy()
+        # should_buy = True
         if should_buy:
             spent_cost = balances["USDT"]
             bought_coin = spent_cost / historical_data["prices"][index]
@@ -69,6 +70,7 @@ def check_and_buy(balances, coin, historical_data, index, algorithm, orders):
 def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
     algo_return = algorithm(historical_data, index, check_condition="SELL", orders=orders)
     should_sell = algo_return.should_sell()
+    # should_sell = True
 
     if should_sell and coin in balances.keys() and balances[coin] > 0.0:
         coin_balance = balances[coin]
@@ -84,12 +86,12 @@ def check_and_sell(balances, coin, historical_data, index, algorithm, orders):
 
 
 # symbols_to_backtest = main2.symbols
-symbols_to_backtest = ["LUNAUSDT"]
+symbols_to_backtest = ["MATICUSDT"]
 
 backtest_results = []
 for symbol_to_backtest in symbols_to_backtest:
     historical_data = binance.get_historical_data_on_interval(symbol=symbol_to_backtest, candle_interval="1h",
-                                                              interval="1y")
+                                                              interval="3m")
 
     backtest_result = backtest_algo(algorithm.rsi_vwap_stop_loss, historical_data, 500, symbol_to_backtest)
 

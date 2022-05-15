@@ -1,0 +1,39 @@
+{
+  "backtest_config": [
+    {
+      "default": true,
+      "period": "1y",
+      "coins": [
+        "LUNAUDST"
+      ],
+      "starting_balance": 500.0
+    }
+  ],
+  "algorithms": {
+    "rsi_vwap_stop_loss": {
+      "default": true,
+      "rsi_sell_threshold": 89,
+      "rsi_buy_threshold": 10,
+      "rsi_small_peak_after_stop_loss_percent": 20,
+      "stop_loss_threshold": 0.9
+    }
+  },
+  "binance_api": [
+    {
+      "default": true,
+      "apiKey": "VDcO1lz9EvhDm35RwdQJEWxlW3vGnAkxRXhQyVTBv1CUxNiH3kTMBX7kqtLNxkuZ",
+      "secret_key": "y17hJJxolUwIQNPAfDP98ouHiZzKToqQhPQHRqJ99B336MvyXelBhXi9txZOkCBb"
+    }
+  ],
+  "plots": [
+    {
+      "default": true,
+      "show_plots": true,
+
+      "show_200_ma": false,
+      "show_50_ma": false,
+      "show_20_ma": false,
+      "show_vwap": false
+    }
+  ]
+}
