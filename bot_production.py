@@ -38,7 +38,7 @@ def get_hourly_data(symbol):
 
 def check_and_buy(usdt_balance, coin, historical_data, index, algorithm, orders):
     is_able_to_buy = usdt_balance > USDT_BUY_THESHOLD
-    if is_able_to_buy and not orders[-1].is_buy:
+    if is_able_to_buy and len(orders) > 0 and not orders[-1].is_buy:
         algo_return = algorithm(historical_data, index, check_condition="BUY", orders=orders)
         should_buy = algo_return.should_buy()
         if should_buy:
